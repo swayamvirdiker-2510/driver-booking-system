@@ -1,0 +1,149 @@
+<?php
+require_once "config/db.php";
+
+$message = "";
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $role = $_POST["role"];
+    $first_name = trim($_POST["first_name"]);
+    $last_name = trim($_POST["last_name"]);
+    $email = trim($_POST["email"]);
+    $phone = trim($_POST["phone"]);
+    $password = $_POST["password"];
+
+    if (
+        empty($role) ||
+        empty($first_name) ||
+        empty($last_name) ||
+        empty($email) ||
+        empty($phone) ||
+        empty($password)
+    ) {
+        $message = "All fields are required.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $message = "Enter a valid email address.";
+    } elseif (strlen($password) < 6) {
+        $message = "Password must contain at least 6 characters.";
+    } else {
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        if ($role === "customer") {
+            $sql = "
+                INSERT INTO customers
+                (cfname, clname, cemail, phone_no, password)
+                VALUES (?, ?, ?, ?, ?)
+            ";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "sssss",
+                $first_name,
+                $last_name,
+                $email,
+                $phone,
+                $hashed_password
+            );
+        } elseif ($role === "driver") {
+            $license_no = trim($_POST["license_no"]);
+            $area = trim($_POST["area"]);
+
+            if (empty($license_no) || empty($area)) {
+                $message = "License number and area are required for drivers.";
+            } else {
+                $sql = "
+                    INSERT INTO drivers
+                    (license_no, dfname, dlname, demail, dphone_no, password, area)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ";
+
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param(
+                    "sssssss",
+                    $license_no,
+                    $first_name,
+                    $last_name,
+                    $email,
+                    $phone,
+                    $hashed_password,
+                    $area
+                );
+            }
+        }
+
+        if (isset($stmt) && empty($message)) {
+            if ($stmt->execute()) {
+                $message = "Registration successful. You can now log in.";
+            } else {
+                $message = "Registration failed. Email or license may already exist.";
+            }
+
+            $stmt->close();
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>Create Account</h2>
+
+    <?php if ($message): ?>
+        <p class="message"><?= htmlspecialchars($message) ?></p>
+    <?php endif; ?>
+
+    <form method="POST">
+        <label>Register as</label>
+        <select name="role" id="role" onchange="showDriverFields()" required>
+            <option value="">Select role</option>
+            <option value="customer">Customer</option>
+            <option value="driver">Driver</option>
+        </select>
+
+        <label>First name</label>
+        <input type="text" name="first_name" required>
+
+        <label>Last name</label>
+        <input type="text" name="last_name" required>
+
+        <label>Email</label>
+        <input type="email" name="email" required>
+
+        <label>Phone number</label>
+        <input type="text" name="phone" required>
+
+        <div id="driverFields" style="display: none;">
+            <label>License number</label>
+            <input type="text" name="license_no">
+
+            <label>Operating area</label>
+            <input type="text" name="area">
+        </div>
+
+        <label>Password</label>
+        <input type="password" name="password" required>
+
+        <button type="submit">Register</button>
+    </form>
+
+    <p>Already registered? <a href="login.php">Login here</a></p>
+</div>
+
+<script>
+function showDriverFields() {
+    const role = document.getElementById("role").value;
+    const fields = document.getElementById("driverFields");
+
+    fields.style.display = role === "driver" ? "block" : "none";
+}
+</script>
+
+</body>
+</html>
