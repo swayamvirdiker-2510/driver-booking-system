@@ -1,0 +1,59 @@
+CREATE DATABASE IF NOT EXISTS driver_booking_system;
+USE driver_booking_system;
+
+CREATE TABLE customers (
+    customer_id INT AUTO_INCREMENT PRIMARY KEY,
+    cfname VARCHAR(100) NOT NULL,
+    clname VARCHAR(100) NOT NULL,
+    cemail VARCHAR(150) NOT NULL UNIQUE,
+    phone_no VARCHAR(15) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE drivers (
+    driver_id INT AUTO_INCREMENT PRIMARY KEY,
+    license_no VARCHAR(100) NOT NULL UNIQUE,
+    dfname VARCHAR(100) NOT NULL,
+    dlname VARCHAR(100) NOT NULL,
+    demail VARCHAR(150) NOT NULL UNIQUE,
+    dphone_no VARCHAR(15) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    availability ENUM('Available', 'Unavailable') DEFAULT 'Available',
+    area VARCHAR(150) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE vehicles (
+    vehicle_id INT AUTO_INCREMENT PRIMARY KEY,
+    reg_no VARCHAR(50) NOT NULL UNIQUE,
+    capacity INT NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    c_id INT NOT NULL,
+    FOREIGN KEY (c_id) REFERENCES customers(customer_id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE bookings (
+    booking_id INT AUTO_INCREMENT PRIMARY KEY,
+    pickup_loc VARCHAR(255) NOT NULL,
+    drop_loc VARCHAR(255) NOT NULL,
+    bdate DATE NOT NULL,
+    btime TIME NOT NULL,
+    duration INT NOT NULL,
+    status ENUM('Pending', 'Accepted', 'Rejected', 'Completed')
+        DEFAULT 'Pending',
+    c_id INT NOT NULL,
+    v_id INT NOT NULL,
+    d_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (c_id) REFERENCES customers(customer_id)
+    ON DELETE CASCADE,
+
+    FOREIGN KEY (v_id) REFERENCES vehicles(vehicle_id)
+    ON DELETE CASCADE,
+
+    FOREIGN KEY (d_id) REFERENCES drivers(driver_id)
+    ON DELETE CASCADE
+);
